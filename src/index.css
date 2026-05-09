@@ -1,0 +1,309 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.record-page {
+  display: flex;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.calendar-card {
+  width: 380px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.record-center {
+  width: 380px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.record-right {
+  width: 320px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.calendar-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  padding: 4px 0;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.calendar-day:hover {
+  background: #f0f0f0;
+}
+
+.calendar-day.today {
+  background: #e6f7ff;
+  color: #1677FF;
+}
+
+.calendar-day.selected {
+  background: #1677FF;
+  color: #fff;
+}
+
+.calendar-day.other-month {
+  color: #ccc;
+}
+
+.calendar-day .day-expense {
+  font-size: 9px;
+  color: #ff4d4f;
+}
+
+.calendar-day .day-income {
+  font-size: 9px;
+  color: #52c41a;
+}
+
+.type-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.type-tab {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.type-tab.active {
+  border-color: #1677FF;
+  color: #1677FF;
+  background: #e6f7ff;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.category-item:hover {
+  background: #f5f5f5;
+}
+
+.category-item.selected {
+  border-color: #1677FF;
+  background: #e6f7ff;
+}
+
+.category-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.category-name {
+  font-size: 11px;
+  text-align: center;
+}
+
+.input-section {
+  margin-top: 16px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.amount-input {
+  flex: 1;
+}
+
+.currency-select {
+  width: 80px;
+}
+
+.remark-input {
+  width: 100%;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 40px;
+  background: #1677FF !important;
+  border-color: #1677FF !important;
+}
+
+.records-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.records-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.records-list {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.record-item {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #fafafa;
+  border-left: 3px solid;
+}
+
+.record-item .record-category {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.record-item .record-remark {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.record-item .record-amount {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.record-item .record-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.no-records {
+  text-align: center;
+  color: #999;
+  padding: 40px 0;
+}
+
+.user-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.user-tab {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.user-tab.active {
+  border-color: #1677FF;
+  color: #fff;
+  background: #1677FF;
+}
+
+.platform-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.platform-chip {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.2s;
+}
+
+.platform-chip.selected {
+  color: #fff;
+}
+
+.empty-category {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+}

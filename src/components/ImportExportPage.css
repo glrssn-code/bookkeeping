@@ -1,0 +1,53 @@
+.import-export-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.import-export-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.section-title {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.dragger-content {
+  padding: 32px 16px;
+}
+
+.dragger-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.dragger-text {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.dragger-hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.danger-zone {
+  border: 1px solid #ffccc7;
+}
+
+.danger-zone .section-title {
+  color: #ff4d4f;
+}
