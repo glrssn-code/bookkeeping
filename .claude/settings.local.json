@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(python -c ' *)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npx vite *)",
+      "Bash(npm uninstall *)",
+      "Bash(npm ls *)",
+      "Bash(npx asar *)",
+      "Bash(npx electron-builder *)",
+      "Bash(cp node_modules/electron/dist/*.dll release/win-unpacked/)",
+      "Bash(cp node_modules/electron/dist/locales release/win-unpacked/ -r)",
+      "Bash(cp node_modules/electron/dist/resources.pak release/win-unpacked/resources/)",
+      "Bash(tasklist)",
+      "Bash(./electron.exe)",
+      "Bash(\"release/win-unpacked/electron.exe\")",
+      "Bash(\"E:/VSCODE/bookkeeping/bookkeeping/release/win-unpacked/electron.exe\" --version)",
+      "Bash(\"E:\\\\VSCODE\\\\bookkeeping\\\\bookkeeping\\\\release\\\\win-unpacked\\\\Bookkeeping.exe\")",
+      "Bash(curl -s http://localhost:5177/)",
+      "Bash(netstat -ano)",
+      "Bash(cmd.exe /c \"whoami /groups | findstr /i \\\\\"admin\\\\\" \")",
+      "Bash(powershell -Command \"Compress-Archive -Path 'E:/VSCODE/bookkeeping/bookkeeping/release/win-unpacked/*' -DestinationPath 'E:/VSCODE/bookkeeping/bookkeeping/release/Bookkeeping-1.1.0-win.zip' -Force\")",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(rm -rf .git bookkeeping)",
+      "Bash(git init *)",
+      "Bash(ls /e/VSCODE/bookkeeping1/)",
+      "Read(//e/VSCODE/bookkeeping1//**)",
+      "Bash(rm -rf /e/VSCODE/bookkeeping/bookkeeping/.git && ls /e/VSCODE/bookkeeping/)",
+      "Bash(find /e/VSCODE -maxdepth 3 -name \"package.json\" 2>/dev/null | head -10)",
+      "Read(//e/VSCODE/**)",
+      "Bash(sleep 3 && cat /c/Users/ZYD/AppData/Local/Temp/claude/e--VSCODE-bookkeeping/f8474725-83ac-4b29-818a-ce2f14ad7cc1/tasks/bpw994e9p.output 2>/dev/null | head -20)",
+      "Read(//c/Users/ZYD/AppData/Local/Temp/claude/e--VSCODE-bookkeeping/f8474725-83ac-4b29-818a-ce2f14ad7cc1/tasks/**)"
+    ],
+    "additionalDirectories": [
+      "E:\\VSCODE\\bookkeeping\\bookkeeping\\.git"
+    ]
+  }
+}
