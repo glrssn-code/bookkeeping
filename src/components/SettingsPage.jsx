@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Button, Modal, message, InputNumber, Input } from 'antd'
+import { Button, Modal, message, InputNumber, Input, DatePicker } from 'antd'
 import './SettingsPage.css'
+import dayjs from 'dayjs'
 
 const PRESET_COLORS = [
   '#FF6B6B', '#FF9F43', '#F368E0', '#00D2D3', '#1E90FF',
@@ -33,9 +34,25 @@ function SettingsPage({ categories, exchangeRates, onSave }) {
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [editingColorCategory, setEditingColorCategory] = useState(null)
 
+  const [userPaymentDates, setUserPaymentDates] = useState(() => {
+    const saved = localStorage.getItem('bookkeeping_user_payment_dates')
+    return saved ? JSON.parse(saved) : {
+      user1: { wechat: null, alipay: null, douyin: null, meituan: null },
+      user2: { wechat: null, alipay: null, douyin: null, meituan: null }
+    }
+  })
+
   const handleSave = () => {
-    onSave(localCategories, localRates)
+    onSave(localCategories, localRates, userPaymentDates)
+    localStorage.setItem('bookkeeping_user_payment_dates', JSON.stringify(userPaymentDates))
     message.success('设置已保存')
+  }
+
+  const handlePaymentDateChange = (user, platform, date) => {
+    setUserPaymentDates(prev => ({
+      ...prev,
+      [user]: { ...prev[user], [platform]: date ? date.format('YYYY-MM-DD') : null }
+    }))
   }
 
   const handleResetCategories = () => {
@@ -127,6 +144,32 @@ function SettingsPage({ categories, exchangeRates, onSave }) {
 
       <div className="settings-right">
         <div className="settings-section">
+          <Button type="primary" onClick={handleSave} style={{ marginBottom: '12px' }}>
+            保存设置
+          </Button>
+        </div>
+
+        <div className="settings-section">
+          <div className="section-title">用户支付日期设置</div>
+          {['user1', 'user2'].map(user => (
+            <div key={user} style={{ marginBottom: '16px' }}>
+              <div style={{ fontWeight: 600, marginBottom: '8px' }}>{user === 'user1' ? '用户1' : '用户2'}</div>
+              {['wechat', 'alipay', 'douyin', 'meituan'].map(platform => (
+                <div key={platform} className="exchange-rate-item">
+                  <span>{platform === 'wechat' ? '微信' : platform === 'alipay' ? '支付宝' : platform === 'douyin' ? '抖音' : '美团'}</span>
+                  <DatePicker
+                    value={userPaymentDates[user][platform] ? dayjs(userPaymentDates[user][platform]) : null}
+                    onChange={date => handlePaymentDateChange(user, platform, date)}
+                    placeholder="选择日期"
+                    style={{ width: 150 }}
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="settings-section">
           <div className="section-title">汇率设置</div>
           <div className="exchange-rate-list">
             <div className="exchange-rate-item">
@@ -172,12 +215,6 @@ function SettingsPage({ categories, exchangeRates, onSave }) {
           ))}
         </div>
       </Modal>
-
-      <div className="settings-actions">
-        <Button type="primary" onClick={handleSave}>
-          保存设置
-        </Button>
-      </div>
     </div>
   )
 }

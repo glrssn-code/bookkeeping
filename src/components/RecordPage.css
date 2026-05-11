@@ -24,11 +24,13 @@
 }
 
 .calendar-card {
-  width: 380px;
+  flex: 1;
+  min-width: 380px;
   background: #fff;
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
 }
 
 .calendar-header {
@@ -47,6 +49,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+  overflow: hidden;
 }
 
 .calendar-weekday {
@@ -57,13 +60,19 @@
 }
 
 .calendar-day {
-  aspect-ratio: 1;
+  aspect-ratio: unset;
+  height: 80px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
+  gap: 2px;
+  padding: 4px;
+  box-sizing: border-box;
+  border: 1px solid #d0e8ff;
 }
 
 .calendar-day:hover {
@@ -79,13 +88,35 @@
   color: #fff;
 }
 
+.calendar-day.today:hover {
+  background: #1668d9;
+}
+
 .calendar-day.selected {
-  background: #1677FF;
-  color: #fff;
+  background: #e6f4ff;
+  border: 2px solid #1677FF;
+}
+
+.calendar-day-num {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.calendar-day-expense {
+  color: #ff4d4f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.calendar-day-income {
+  color: #52c41a;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .record-center {
   width: 380px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -149,8 +180,9 @@
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  width: 100%;
 }
 
 .category-item {
@@ -178,7 +210,7 @@
 }
 
 .category-icon {
-  font-size: 36px;
+  font-size: 48px;
   margin-bottom: 8px;
 }
 
@@ -221,6 +253,7 @@
 
 .record-right {
   width: 320px;
+  flex-shrink: 0;
   background: #fff;
   border-radius: 8px;
   padding: 16px;
@@ -263,9 +296,12 @@
 }
 
 .record-remark {
-  font-size: 12px;
-  color: #666;
+  font-size: 13px;
+  color: #333;
   margin-bottom: 4px;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
 }
 
 .record-amount {

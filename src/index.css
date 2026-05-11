@@ -4,6 +4,27 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg-color: #f5f5f5;
+  --card-bg: #fff;
+  --text-color: #333;
+  --primary-color: #1677FF;
+}
+
+[data-theme="dark"] {
+  --bg-color: #1f1f1f;
+  --card-bg: #2d2d2d;
+  --text-color: #e0e0e0;
+  --primary-color: #1890ff;
+}
+
+[data-theme="green"] {
+  --bg-color: #f0f9f0;
+  --card-bg: #fff;
+  --text-color: #333;
+  --primary-color: #52c41a;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -17,7 +38,7 @@ body {
 
 .calendar-card {
   width: 380px;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -27,7 +48,7 @@ body {
 
 .record-center {
   width: 380px;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -37,7 +58,7 @@ body {
 
 .record-right {
   width: 320px;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -71,16 +92,18 @@ body {
 }
 
 .calendar-day {
-  aspect-ratio: 1;
+  aspect-ratio: unset;
+  height: 80px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
   position: relative;
+  border: 1px solid #d0e8ff;
 }
 
 .calendar-day:hover {
@@ -122,7 +145,7 @@ body {
   padding: 8px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card-bg);
   cursor: pointer;
   text-align: center;
   font-size: 14px;
@@ -137,7 +160,7 @@ body {
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -269,7 +292,7 @@ body {
   padding: 8px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  background: #fff;
+  background: var(--card-bg);
   cursor: pointer;
   text-align: center;
   font-size: 14px;
@@ -306,4 +329,82 @@ body {
   text-align: center;
   color: #999;
   padding: 20px;
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] body,
+[data-theme="dark"] {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .calendar-day {
+  background: #3d3d3d;
+  border-color: #4d4d4d;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .calendar-day-num,
+[data-theme="dark"] .calendar-day-expense,
+[data-theme="dark"] .calendar-day-income {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .calendar-day.today {
+  background: #1890ff;
+}
+
+[data-theme="dark"] .category-item {
+  background: #3d3d3d;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .type-tab,
+[data-theme="dark"] .nav-btn {
+  background: #3d3d3d;
+  color: #e0e0e0;
+  border-color: #4d4d4d;
+}
+
+[data-theme="dark"] .type-tab.active {
+  background: #1890ff;
+  color: #fff;
+}
+
+[data-theme="dark"] .input-section,
+[data-theme="dark"] .record-item {
+  background: #3d3d3d;
+}
+
+[data-theme="dark"] .input-section input,
+[data-theme="dark"] .input-section textarea {
+  background: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #4d4d4d;
+}
+
+[data-theme="dark"] .record-right {
+  border-left: none;
+}
+
+[data-theme="dark"] .settings-left,
+[data-theme="dark"] .settings-right {
+  background: #2d2d2d;
+}
+
+[data-theme="dark"] .settings-section {
+  border-bottom-color: #4d4d4d;
+}
+
+[data-theme="dark"] .category-setting-item,
+[data-theme="dark"] .exchange-rate-item {
+  background: #3d3d3d;
+}
+
+[data-theme="dark"] .color-swatch {
+  border-color: #4d4d4d;
+}
+
+[data-theme="dark"] .record-meta,
+[data-theme="dark"] .calendar-weekday {
+  color: #888;
 }

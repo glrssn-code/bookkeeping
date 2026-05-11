@@ -189,6 +189,49 @@ function ImportExportPage({ categories, exchangeRates }) {
       ]
       XLSX.utils.book_append_sheet(workbook, rawDataSheet, '原始数据')
 
+      // 创建设置sheet
+      const settingsAoa = [
+        ['设置项', '数值'],
+        ['导出日期', new Date().toLocaleDateString()],
+        ['汇率 USD', exchangeRates?.USD || 7.2],
+        ['汇率 HKD', exchangeRates?.HKD || 0.92],
+        ['汇率 CNY', exchangeRates?.CNY || 1]
+      ]
+      // 添加类别设置
+      const savedCategories = localStorage.getItem('bookkeeping_categories')
+      if (savedCategories) {
+        const cats = JSON.parse(savedCategories)
+        settingsAoa.push(['支出类别数', cats.filter(c => c.type === 'expense').length])
+        settingsAoa.push(['收入类别数', cats.filter(c => c.type === 'income').length])
+        cats.filter(c => c.type === 'expense').forEach(c => {
+          settingsAoa.push([`支出_${c.name}_颜色`, c.color])
+        })
+        cats.filter(c => c.type === 'income').forEach(c => {
+          settingsAoa.push([`收入_${c.name}_颜色`, c.color])
+        })
+      }
+
+      // 添加用户支付日期设置
+      const savedPaymentDates = localStorage.getItem('bookkeeping_user_payment_dates')
+      if (savedPaymentDates) {
+        const paymentDates = JSON.parse(savedPaymentDates)
+        settingsAoa.push(['用户1_微信', paymentDates.user1?.wechat || ''])
+        settingsAoa.push(['用户1_支付宝', paymentDates.user1?.alipay || ''])
+        settingsAoa.push(['用户1_抖音', paymentDates.user1?.douyin || ''])
+        settingsAoa.push(['用户1_美团', paymentDates.user1?.meituan || ''])
+        settingsAoa.push(['用户2_微信', paymentDates.user2?.wechat || ''])
+        settingsAoa.push(['用户2_支付宝', paymentDates.user2?.alipay || ''])
+        settingsAoa.push(['用户2_抖音', paymentDates.user2?.douyin || ''])
+        settingsAoa.push(['用户2_美团', paymentDates.user2?.meituan || ''])
+      }
+
+      const settingsSheet = XLSX.utils.aoa_to_sheet(settingsAoa)
+      settingsSheet['!cols'] = [
+        { wch: 20 },
+        { wch: 20 }
+      ]
+      XLSX.utils.book_append_sheet(workbook, settingsSheet, '设置')
+
       XLSX.writeFile(workbook, `记账本导出_${year}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
       message.success('导出成功')
     } catch (err) {
@@ -381,6 +424,62 @@ function ImportExportPage({ categories, exchangeRates }) {
         message.success(`成功导入 ${allRecords.length} 条记录`)
       } else {
         message.warning('未能解析到有效记录')
+      }
+
+      // 导入设置sheet
+      if (workbook.SheetNames.includes('设置')) {
+        const settingsSheet = workbook.Sheets['设置']
+        if (settingsSheet['!ref']) {
+          const settingsData = XLSX.utils.sheet_to_json(settingsSheet, { header: 1 })
+          const newRates = {}
+          const newCategories = [...categories]
+
+          settingsData.forEach(row => {
+            if (row.length < 2) return
+            const key = String(row[0])
+            const value = row[1]
+
+            if (key === '汇率 USD') newRates.USD = parseFloat(value) || 7.2
+            if (key === '汇率 HKD') newRates.HKD = parseFloat(value) || 0.92
+            if (key === '汇率 CNY') newRates.CNY = parseFloat(value) || 1
+
+            // 导入类别颜色设置
+            const expenseMatch = key.match(/^支出_(.+)_颜色$/)
+            if (expenseMatch) {
+              const catName = expenseMatch[1]
+              const cat = newCategories.find(c => c.name === catName && c.type === 'expense')
+              if (cat) cat.color = value
+            }
+            const incomeMatch = key.match(/^收入_(.+)_颜色$/)
+            if (incomeMatch) {
+              const catName = incomeMatch[1]
+              const cat = newCategories.find(c => c.name === catName && c.type === 'income')
+              if (cat) cat.color = value
+            }
+
+            // 导入用户支付日期设置
+            const userPaymentMatch = key.match(/^(用户[12])_(微信|支付宝|抖音|美团)$/)
+            if (userPaymentMatch) {
+              const user = userPaymentMatch[1] === '用户1' ? 'user1' : 'user2'
+              const platformMap = { '微信': 'wechat', '支付宝': 'alipay', '抖音': 'douyin', '美团': 'meituan' }
+              const platform = platformMap[userPaymentMatch[2]]
+              if (!window._importedPaymentDates) window._importedPaymentDates = {}
+              if (!window._importedPaymentDates[user]) window._importedPaymentDates[user] = {}
+              window._importedPaymentDates[user][platform] = value
+            }
+          })
+
+          // 保存设置
+          if (Object.keys(newRates).length > 0) {
+            localStorage.setItem('bookkeeping_exchange_rates', JSON.stringify(newRates))
+          }
+          localStorage.setItem('bookkeeping_categories', JSON.stringify(newCategories))
+          if (window._importedPaymentDates) {
+            localStorage.setItem('bookkeeping_user_payment_dates', JSON.stringify(window._importedPaymentDates))
+            delete window._importedPaymentDates
+          }
+          message.success('设置已同步')
+        }
       }
     } catch (err) {
       console.error(err)

@@ -5,10 +5,11 @@ import './RecordPage.css'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
-function RecordPage({ categories, exchangeRates }) {
+function RecordPage({ categories, exchangeRates, theme }) {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [records, setRecords] = useState([])
+  const [monthRecords, setMonthRecords] = useState([])
   const [selectedType, setSelectedType] = useState('expense')
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [amount, setAmount] = useState('')
@@ -30,14 +31,24 @@ function RecordPage({ categories, exchangeRates }) {
   }, [selectedDate])
 
   useEffect(() => {
+    loadMonthRecords()
     amountInputRef.current?.focus()
-  }, [selectedCategory, defaultCategory])
+  }, [selectedCategory, defaultCategory, currentMonth])
 
   const loadRecords = async () => {
     const dateStr = formatDate(selectedDate)
     const allRecords = await getAllRecords()
     const dayRecords = allRecords.filter(r => r.date === dateStr)
     setRecords(dayRecords)
+  }
+
+  const loadMonthRecords = async () => {
+    const allRecords = await getAllRecords()
+    const year = currentMonth.getFullYear()
+    const month = currentMonth.getMonth()
+    const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
+    const filtered = allRecords.filter(r => r.date.startsWith(monthStr))
+    setMonthRecords(filtered)
   }
 
   const formatDate = (date) => {
@@ -83,11 +94,16 @@ function RecordPage({ categories, exchangeRates }) {
 
   const handleDayClick = (date) => {
     setSelectedDate(date)
+    if (date.getMonth() !== currentMonth.getMonth() || date.getFullYear() !== currentMonth.getFullYear()) {
+      setCurrentMonth(new Date(date.getFullYear(), date.getMonth()))
+    }
+    setTimeout(() => amountInputRef.current?.focus(), 50)
   }
 
   const handleSubmit = async () => {
     const numAmount = parseFloat(amount)
-    if (!selectedCategory || !numAmount || numAmount <= 0) {
+    const categoryToUse = selectedCategory || defaultCategory
+    if (!categoryToUse || !numAmount || numAmount <= 0) {
       message.warning('请输入有效金额')
       return
     }
@@ -101,7 +117,7 @@ function RecordPage({ categories, exchangeRates }) {
     await addRecord({
       date: formatDate(selectedDate),
       type: selectedType,
-      category: selectedCategory || defaultCategory,
+      category: categoryToUse,
       amount: convertedAmount,
       originalAmount: numAmount,
       originalCurrency: currency,
@@ -112,7 +128,8 @@ function RecordPage({ categories, exchangeRates }) {
     setAmount('')
     setRemark('')
     amountInputRef.current?.focus()
-    loadRecords()
+    await loadMonthRecords()
+    await loadRecords()
   }
 
   const handleAmountChange = (e) => {
@@ -133,7 +150,7 @@ function RecordPage({ categories, exchangeRates }) {
   }
 
   const handleCategoryNavigation = async (e) => {
-    const cols = 4
+    const cols = 3
     const currentIdx = filteredCategories.findIndex(c => c.id === (selectedCategory || defaultCategory))
     console.log('Navigation:', e.key, 'currentIdx:', currentIdx, 'filteredCategories.length:', filteredCategories.length)
     if (currentIdx === -1) return
@@ -180,7 +197,8 @@ function RecordPage({ categories, exchangeRates }) {
       onOk: async () => {
         await deleteRecord(id)
         message.success('删除成功')
-        loadRecords()
+        await loadMonthRecords()
+        await loadRecords()
       }
     })
   }
@@ -209,7 +227,8 @@ function RecordPage({ categories, exchangeRates }) {
     })
     message.success('修改成功')
     setEditingRecord(null)
-    loadRecords()
+    await loadMonthRecords()
+    await loadRecords()
   }
 
   const days = getDaysInMonth(currentMonth)
@@ -229,13 +248,22 @@ function RecordPage({ categories, exchangeRates }) {
           {days.map(({ date, otherMonth }, i) => {
             const dateStr = formatDate(date)
             const isSelected = formatDate(selectedDate) === dateStr
+            const dayRecords = monthRecords.filter(r => r.date === dateStr)
+            const dayIncome = dayRecords.filter(r => r.type === 'income').reduce((sum, r) => sum + r.amount, 0)
+            const dayExpense = dayRecords.filter(r => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0)
             return (
               <div
                 key={i}
                 className={`calendar-day ${otherMonth ? 'other-month' : ''} ${isToday(date) ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleDayClick(date)}
               >
-                <span>{date.getDate()}</span>
+                <span className="calendar-day-num">{date.getDate()}</span>
+                {!otherMonth && (
+                  <>
+                    <span className="calendar-day-expense">{dayExpense > 0 ? `-¥${dayExpense.toFixed(0)}` : '¥0'}</span>
+                    <span className="calendar-day-income">{dayIncome > 0 ? `+¥${dayIncome.toFixed(0)}` : '¥0'}</span>
+                  </>
+                )}
               </div>
             )
           })}
