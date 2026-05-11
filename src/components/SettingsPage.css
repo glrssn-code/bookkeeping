@@ -38,19 +38,19 @@
 .category-setting-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 12px;
+  padding: 12px;
   background: #fafafa;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .category-setting-icon {
-  font-size: 18px;
+  font-size: 24px;
 }
 
-.category-name-input {
+.category-setting-name {
   flex: 1;
-  max-width: 120px;
+  font-size: 14px;
 }
 
 .color-swatch {

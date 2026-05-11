@@ -51,12 +51,6 @@ function SettingsPage({ categories, exchangeRates, onSave }) {
     })
   }
 
-  const handleCategoryNameChange = (id, newName) => {
-    setLocalCategories(prev =>
-      prev.map(c => c.id === id ? { ...c, name: newName } : c)
-    )
-  }
-
   const handleCategoryColorChange = (id) => {
     setLocalCategories(prev =>
       prev.map(c => c.id === editingColorCategory?.id ? { ...c, color: id } : c)
@@ -70,20 +64,53 @@ function SettingsPage({ categories, exchangeRates, onSave }) {
     setShowColorPicker(true)
   }
 
+  const moveCategory = (catId, direction) => {
+    const expenseCats = localCategories.filter(c => c.type === 'expense')
+    const currentPos = expenseCats.findIndex(c => c.id === catId)
+
+    if (direction === 'up' && currentPos > 0) {
+      const newCategories = [...localCategories]
+      const expenseIndices = newCategories.map((c, i) => c.type === 'expense' ? i : -1).filter(i => i !== -1)
+      const currentActualIdx = expenseIndices[currentPos]
+      const prevActualIdx = expenseIndices[currentPos - 1]
+      ;[newCategories[currentActualIdx], newCategories[prevActualIdx]] = [newCategories[prevActualIdx], newCategories[currentActualIdx]]
+      setLocalCategories(newCategories)
+    } else if (direction === 'down' && currentPos < expenseCats.length - 1) {
+      const newCategories = [...localCategories]
+      const expenseIndices = newCategories.map((c, i) => c.type === 'expense' ? i : -1).filter(i => i !== -1)
+      const currentActualIdx = expenseIndices[currentPos]
+      const nextActualIdx = expenseIndices[currentPos + 1]
+      ;[newCategories[currentActualIdx], newCategories[nextActualIdx]] = [newCategories[nextActualIdx], newCategories[currentActualIdx]]
+      setLocalCategories(newCategories)
+    }
+  }
+
   return (
     <div className="settings-container">
       <div className="settings-left">
         <div className="settings-section">
-          <div className="section-title">类别设置</div>
+          <div className="section-title">支出类别设置（颜色和排序）</div>
           <div className="category-list">
-            {localCategories.map(cat => (
+            {localCategories.filter(c => c.type === 'expense').map((cat, idx) => (
               <div key={cat.id} className="category-setting-item">
                 <span className="category-setting-icon">{cat.icon}</span>
-                <Input
-                  className="category-name-input"
-                  value={cat.name}
-                  onChange={e => handleCategoryNameChange(cat.id, e.target.value)}
+                <span className="category-setting-name">{cat.name}</span>
+                <div
+                  className="color-swatch"
+                  style={{ background: cat.color }}
+                  onClick={() => openColorPicker(cat)}
                 />
+                <Button size="small" onClick={() => moveCategory(cat.id, 'up')} disabled={idx === 0}>↑</Button>
+                <Button size="small" onClick={() => moveCategory(cat.id, 'down')} disabled={idx === localCategories.filter(c => c.type === 'expense').length - 1}>↓</Button>
+              </div>
+            ))}
+          </div>
+          <div className="section-title" style={{ marginTop: '20px' }}>收入类别设置（颜色）</div>
+          <div className="category-list">
+            {localCategories.filter(c => c.type === 'income').map(cat => (
+              <div key={cat.id} className="category-setting-item">
+                <span className="category-setting-icon">{cat.icon}</span>
+                <span className="category-setting-name">{cat.name}</span>
                 <div
                   className="color-swatch"
                   style={{ background: cat.color }}

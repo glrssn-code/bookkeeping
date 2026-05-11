@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { InputNumber, Input, Select, Button, Modal, message } from 'antd'
 import { getRecordsByDate, addRecord, deleteRecord, getAllRecords, updateRecord } from '../lib/db'
 import './RecordPage.css'
@@ -9,19 +9,29 @@ function RecordPage({ categories, exchangeRates }) {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [records, setRecords] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState(null)
   const [selectedType, setSelectedType] = useState('expense')
-  const [amount, setAmount] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('CNY')
   const [remark, setRemark] = useState('')
   const [editingRecord, setEditingRecord] = useState(null)
   const [editDate, setEditDate] = useState(null)
   const [editAmount, setEditAmount] = useState(null)
   const [editRemark, setEditRemark] = useState('')
+  const amountInputRef = useRef(null)
+
+  const expenseCategories = categories.filter(c => c.type === 'expense')
+  const incomeCategories = categories.filter(c => c.type === 'income')
+  const filteredCategories = selectedType === 'expense' ? expenseCategories : incomeCategories
+  const defaultCategory = filteredCategories[0]?.id
 
   useEffect(() => {
     loadRecords()
   }, [selectedDate])
+
+  useEffect(() => {
+    amountInputRef.current?.focus()
+  }, [selectedCategory, defaultCategory])
 
   const loadRecords = async () => {
     const dateStr = formatDate(selectedDate)
@@ -76,27 +86,89 @@ function RecordPage({ categories, exchangeRates }) {
   }
 
   const handleSubmit = async () => {
-    if (!selectedCategory || !amount) {
-      message.warning('请选择类别并输入金额')
+    const numAmount = parseFloat(amount)
+    if (!selectedCategory || !numAmount || numAmount <= 0) {
+      message.warning('请输入有效金额')
+      return
+    }
+    if (numAmount > 9999999) {
+      message.warning('单笔最大金额为9999999')
       return
     }
     const rate = exchangeRates[currency] || 1
-    const convertedAmount = amount * rate
+    const convertedAmount = numAmount * rate
 
     await addRecord({
       date: formatDate(selectedDate),
       type: selectedType,
-      category: selectedCategory,
+      category: selectedCategory || defaultCategory,
       amount: convertedAmount,
-      originalAmount: amount,
+      originalAmount: numAmount,
       originalCurrency: currency,
       remark
     })
 
     message.success('记录成功')
-    setAmount(null)
+    setAmount('')
     setRemark('')
+    amountInputRef.current?.focus()
     loadRecords()
+  }
+
+  const handleAmountChange = (e) => {
+    const value = e.target.value
+    // 只允许数字和小数点
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setAmount(value)
+    }
+  }
+
+  const handleAmountKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSubmit()
+    } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      e.preventDefault()
+      handleCategoryNavigation(e)
+    }
+  }
+
+  const handleCategoryNavigation = async (e) => {
+    const cols = 4
+    const currentIdx = filteredCategories.findIndex(c => c.id === (selectedCategory || defaultCategory))
+    console.log('Navigation:', e.key, 'currentIdx:', currentIdx, 'filteredCategories.length:', filteredCategories.length)
+    if (currentIdx === -1) return
+
+    let newIdx = currentIdx
+    if (e.key === 'ArrowLeft') {
+      newIdx = currentIdx - 1
+    } else if (e.key === 'ArrowRight') {
+      newIdx = currentIdx + 1
+    } else if (e.key === 'ArrowUp') {
+      newIdx = currentIdx - cols
+    } else if (e.key === 'ArrowDown') {
+      newIdx = currentIdx + cols
+    }
+
+    if (newIdx >= 0 && newIdx < filteredCategories.length) {
+      const numAmount = parseFloat(amount)
+      if (amount && numAmount && numAmount > 0 && numAmount <= 9999999) {
+        const rate = exchangeRates[currency] || 1
+        const convertedAmount = numAmount * rate
+        await addRecord({
+          date: formatDate(selectedDate),
+          type: selectedType,
+          category: selectedCategory || defaultCategory,
+          amount: convertedAmount,
+          originalAmount: numAmount,
+          originalCurrency: currency,
+          remark
+        })
+        setAmount('')
+        setRemark('')
+        loadRecords()
+      }
+      setSelectedCategory(filteredCategories[newIdx].id)
+    }
   }
 
   const handleDelete = async (id) => {
@@ -140,8 +212,6 @@ function RecordPage({ categories, exchangeRates }) {
     loadRecords()
   }
 
-  const filteredCategories = categories.filter(c => c.type === selectedType)
-
   const days = getDaysInMonth(currentMonth)
 
   return (
@@ -176,25 +246,25 @@ function RecordPage({ categories, exchangeRates }) {
         <div className="type-tabs">
           <button
             className={`type-tab ${selectedType === 'expense' ? 'active' : ''}`}
-            onClick={() => { setSelectedType('expense'); setSelectedCategory(null) }}
+            onClick={() => { setSelectedType('expense'); setSelectedCategory(null); setAmount(''); setRemark('') }}
           >
             支出
           </button>
           <button
             className={`type-tab ${selectedType === 'income' ? 'active' : ''}`}
-            onClick={() => { setSelectedType('income'); setSelectedCategory(null) }}
+            onClick={() => { setSelectedType('income'); setSelectedCategory(null); setAmount(''); setRemark('') }}
           >
             收入
           </button>
         </div>
 
-        <div className="type-tabs">
+        <div className="category-grid">
           {filteredCategories.map(cat => (
             <div
               key={cat.id}
-              className={`category-item ${selectedCategory === cat.id ? 'selected' : ''}`}
+              className={`category-item ${(selectedCategory || defaultCategory) === cat.id ? 'selected' : ''}`}
               onClick={() => setSelectedCategory(cat.id)}
-              style={{ borderColor: selectedCategory === cat.id ? cat.color : 'transparent' }}
+              style={{ borderColor: (selectedCategory || defaultCategory) === cat.id ? cat.color : 'transparent', color: cat.color }}
             >
               <span className="category-icon">{cat.icon}</span>
               <span className="category-name">{cat.name}</span>
@@ -202,41 +272,39 @@ function RecordPage({ categories, exchangeRates }) {
           ))}
         </div>
 
-        {selectedCategory && (
-          <div className="input-section">
-            <div className="input-row">
-              <InputNumber
-                className="amount-input"
-                placeholder="金额"
-                value={amount}
-                onChange={setAmount}
-                min={0}
-                precision={2}
-                style={{ width: '100%' }}
-              />
-              <Select
-                className="currency-select"
-                value={currency}
-                onChange={setCurrency}
-                options={[
-                  { value: 'CNY', label: 'CNY' },
-                  { value: 'HKD', label: 'HKD' },
-                  { value: 'USD', label: 'USD' }
-                ]}
-              />
-            </div>
-            <Input.TextArea
-              className="remark-input"
-              placeholder="备注（可选）"
-              value={remark}
-              onChange={e => setRemark(e.target.value)}
-              rows={2}
+        <div className="input-section">
+          <div className="input-row">
+            <Input
+              ref={amountInputRef}
+              className="amount-input"
+              placeholder="输入金额"
+              value={amount}
+              onChange={handleAmountChange}
+              onKeyDown={handleAmountKeyDown}
+              maxLength={10}
             />
-            <Button type="primary" className="submit-btn" onClick={handleSubmit}>
-              记 录
-            </Button>
+            <Select
+              className="currency-select"
+              value={currency}
+              onChange={setCurrency}
+              options={[
+                { value: 'CNY', label: 'CNY' },
+                { value: 'HKD', label: 'HKD' },
+                { value: 'USD', label: 'USD' }
+              ]}
+            />
           </div>
-        )}
+          <Input.TextArea
+            className="remark-input"
+            placeholder="备注（可选）"
+            value={remark}
+            onChange={e => setRemark(e.target.value)}
+            rows={2}
+          />
+          <Button type="primary" className="submit-btn" onClick={handleSubmit}>
+            记 录
+          </Button>
+        </div>
       </div>
 
       <div className="record-right">

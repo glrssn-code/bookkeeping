@@ -150,38 +150,42 @@
 .category-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 12px;
 }
 
 .category-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 8px;
+  justify-content: center;
+  padding: 20px 12px;
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: all 0.2s;
 }
 
 .category-item:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
 }
 
 .category-item.selected {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  border-color: currentColor;
 }
 
 .category-icon {
-  font-size: 24px;
-  margin-bottom: 4px;
+  font-size: 36px;
+  margin-bottom: 8px;
 }
 
 .category-name {
-  font-size: 12px;
+  font-size: 14px;
   color: #333;
+  font-weight: 500;
 }
 
 .input-section {
