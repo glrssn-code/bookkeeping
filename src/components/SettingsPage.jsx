@@ -18,31 +18,23 @@ const DEFAULT_CATEGORIES = [
   { id: 'car', name: '养车', color: '#1E90FF', icon: '🚗', type: 'expense' },
   { id: 'entertainment', name: '休闲', color: '#FF6B81', icon: '🎮', type: 'expense' },
   { id: 'daily', name: '日用', color: '#7BED9F', icon: '🛒', type: 'expense' },
-  { id: 'loan', name: '贷款', color: '#A29BFE', icon: '🏦', type: 'expense' },
   { id: 'education', name: '教育', color: '#FD79A8', icon: '📚', type: 'expense' },
   { id: 'cat', name: '养猫', color: '#E84393', icon: '🐱', type: 'expense' },
   { id: 'medical', name: '医疗', color: '#00B894', icon: '🏥', type: 'expense' },
-  { id: 'other', name: '其它', color: '#636E72', icon: '📦', type: 'expense' },
-  { id: 'income', name: '收入', color: '#00B894', icon: '💰', type: 'income' }
+  { id: 'rent', name: '住房水电', color: '#A29BFE', icon: '🏠', type: 'expense' },
+  { id: 'other', name: '其他', color: '#636E72', icon: '📦', type: 'expense' },
+  { id: 'salary', name: '工资收入', color: '#00B894', icon: '💰', type: 'income' },
+  { id: 'other-income', name: '其他收入', color: '#52c41a', icon: '💵', type: 'income' }
 ]
 
-const PLATFORMS = [
-  { id: 'wechat', name: '微信', color: '#07C160' },
-  { id: 'alipay', name: '支付宝', color: '#1677FF' },
-  { id: 'meituan', name: '美团', color: '#FFD700' },
-  { id: 'douyin', name: '抖音', color: '#000000' }
-]
-
-function SettingsPage({ categories, platforms, userSettings, exchangeRates, onSave }) {
+function SettingsPage({ categories, exchangeRates, onSave }) {
   const [localCategories, setLocalCategories] = useState(categories)
-  const [localPlatforms, setLocalPlatforms] = useState(platforms)
-  const [localUserSettings, setLocalUserSettings] = useState(userSettings)
   const [localRates, setLocalRates] = useState(exchangeRates)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [editingColorCategory, setEditingColorCategory] = useState(null)
 
   const handleSave = () => {
-    onSave(localCategories, localPlatforms, localUserSettings, localRates)
+    onSave(localCategories, localRates)
     message.success('设置已保存')
   }
 
@@ -107,18 +99,6 @@ function SettingsPage({ categories, platforms, userSettings, exchangeRates, onSa
       </div>
 
       <div className="settings-right">
-        <div className="settings-section">
-          <div className="section-title">平台设置</div>
-          <div className="platform-list">
-            {localPlatforms.map(p => (
-              <div key={p.id} className="platform-setting-item">
-                <span className="platform-color-dot" style={{ background: p.color }} />
-                <span>{p.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <div className="settings-section">
           <div className="section-title">汇率设置</div>
           <div className="exchange-rate-list">

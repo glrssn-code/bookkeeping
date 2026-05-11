@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { InputNumber, Select, Button, Modal, message } from 'antd'
-import { getRecordsByDate, addRecord, deleteRecord, getAllRecords } from '../lib/db'
+import { InputNumber, Input, Select, Button, Modal, message } from 'antd'
+import { getRecordsByDate, addRecord, deleteRecord, getAllRecords, updateRecord } from '../lib/db'
 import './RecordPage.css'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 
-function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
+function RecordPage({ categories, exchangeRates }) {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [records, setRecords] = useState([])
@@ -14,16 +14,14 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
   const [amount, setAmount] = useState(null)
   const [currency, setCurrency] = useState('CNY')
   const [remark, setRemark] = useState('')
-  const [currentUser, setCurrentUser] = useState('user1')
-  const [selectedPlatforms, setSelectedPlatforms] = useState(userSettings.user1Platforms)
+  const [editingRecord, setEditingRecord] = useState(null)
+  const [editDate, setEditDate] = useState(null)
+  const [editAmount, setEditAmount] = useState(null)
+  const [editRemark, setEditRemark] = useState('')
 
   useEffect(() => {
     loadRecords()
   }, [selectedDate])
-
-  useEffect(() => {
-    setSelectedPlatforms(currentUser === 'user1' ? userSettings.user1Platforms : userSettings.user2Platforms)
-  }, [currentUser, userSettings])
 
   const loadRecords = async () => {
     const dateStr = formatDate(selectedDate)
@@ -82,27 +80,18 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
       message.warning('请选择类别并输入金额')
       return
     }
-    if (selectedPlatforms.length === 0) {
-      message.warning('请选择支付平台')
-      return
-    }
-
     const rate = exchangeRates[currency] || 1
     const convertedAmount = amount * rate
 
-    for (const platform of selectedPlatforms) {
-      await addRecord({
-        date: formatDate(selectedDate),
-        type: selectedType,
-        category: selectedCategory,
-        platform,
-        amount: convertedAmount,
-        originalAmount: amount,
-        originalCurrency: currency,
-        remark,
-        user: currentUser
-      })
-    }
+    await addRecord({
+      date: formatDate(selectedDate),
+      type: selectedType,
+      category: selectedCategory,
+      amount: convertedAmount,
+      originalAmount: amount,
+      originalCurrency: currency,
+      remark
+    })
 
     message.success('记录成功')
     setAmount(null)
@@ -122,6 +111,33 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
         loadRecords()
       }
     })
+  }
+
+  const handleEdit = (record) => {
+    setEditingRecord(record)
+    setEditDate(record.date)
+    setEditAmount(record.originalAmount)
+    setEditRemark(record.remark || '')
+  }
+
+  const handleEditSave = async () => {
+    if (!editAmount) {
+      message.warning('请输入金额')
+      return
+    }
+    const rate = exchangeRates[editDate ? currency : 'CNY'] || 1
+    const convertedAmount = editAmount * rate
+
+    await updateRecord(editingRecord.id, {
+      date: editDate,
+      amount: convertedAmount,
+      originalAmount: editAmount,
+      originalCurrency: currency,
+      remark: editRemark
+    })
+    message.success('修改成功')
+    setEditingRecord(null)
+    loadRecords()
   }
 
   const filteredCategories = categories.filter(c => c.type === selectedType)
@@ -157,21 +173,6 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
       </div>
 
       <div className="record-center">
-        <div className="user-selector">
-          <button
-            className={`user-tab ${currentUser === 'user1' ? 'active' : ''}`}
-            onClick={() => setCurrentUser('user1')}
-          >
-            用户1
-          </button>
-          <button
-            className={`user-tab ${currentUser === 'user2' ? 'active' : ''}`}
-            onClick={() => setCurrentUser('user2')}
-          >
-            用户2
-          </button>
-        </div>
-
         <div className="type-tabs">
           <button
             className={`type-tab ${selectedType === 'expense' ? 'active' : ''}`}
@@ -187,28 +188,7 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
           </button>
         </div>
 
-        <div className="platform-grid">
-          {platforms.map(p => (
-            <div
-              key={p.id}
-              className={`platform-chip ${selectedPlatforms.includes(p.id) ? 'selected' : ''}`}
-              style={{
-                borderColor: p.color,
-                color: selectedPlatforms.includes(p.id) ? '#fff' : p.color,
-                background: selectedPlatforms.includes(p.id) ? p.color : 'transparent'
-              }}
-              onClick={() => {
-                setSelectedPlatforms(prev =>
-                  prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]
-                )
-              }}
-            >
-              {p.name}
-            </div>
-          ))}
-        </div>
-
-        <div className="category-grid">
+        <div className="type-tabs">
           {filteredCategories.map(cat => (
             <div
               key={cat.id}
@@ -271,7 +251,6 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
           ) : (
             records.slice().reverse().map(record => {
               const cat = categories.find(c => c.id === record.category)
-              const plat = platforms.find(p => p.id === record.platform)
               return (
                 <div
                   key={record.id}
@@ -281,7 +260,6 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
                   <div className="record-category">
                     <span>{cat?.icon}</span>
                     <span>{cat?.name}</span>
-                    <span style={{ color: plat?.color, fontSize: '11px' }}>{plat?.name}</span>
                   </div>
                   {record.remark && <div className="record-remark">{record.remark}</div>}
                   <div className="record-amount" style={{ color: record.type === 'income' ? '#52c41a' : '#ff4d4f' }}>
@@ -289,6 +267,7 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
                   </div>
                   <div className="record-meta">
                     <span>{record.originalCurrency} {record.originalAmount?.toFixed(2)}</span>
+                    <span style={{ cursor: 'pointer', color: '#1677FF' }} onClick={() => handleEdit(record)}>编辑</span>
                     <span style={{ cursor: 'pointer', color: '#ff4d4f' }} onClick={() => handleDelete(record.id)}>删除</span>
                   </div>
                 </div>
@@ -297,6 +276,46 @@ function RecordPage({ categories, platforms, userSettings, exchangeRates }) {
           )}
         </div>
       </div>
+
+      <Modal
+        open={!!editingRecord}
+        title="编辑记录"
+        onCancel={() => setEditingRecord(null)}
+        onOk={handleEditSave}
+        okText="保存"
+        cancelText="取消"
+      >
+        {editingRecord && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '10px 0' }}>
+            <div>
+              <div style={{ marginBottom: '4px' }}>日期</div>
+              <Input
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
+                placeholder="YYYY-MM-DD"
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: '4px' }}>金额</div>
+              <InputNumber
+                value={editAmount}
+                onChange={setEditAmount}
+                min={0}
+                precision={2}
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: '4px' }}>备注</div>
+              <Input.TextArea
+                value={editRemark}
+                onChange={e => setEditRemark(e.target.value)}
+                rows={2}
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

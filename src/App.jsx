@@ -14,19 +14,13 @@ const DEFAULT_CATEGORIES = [
   { id: 'car', name: '养车', color: '#1E90FF', icon: '🚗', type: 'expense' },
   { id: 'entertainment', name: '休闲', color: '#FF6B81', icon: '🎮', type: 'expense' },
   { id: 'daily', name: '日用', color: '#7BED9F', icon: '🛒', type: 'expense' },
-  { id: 'loan', name: '贷款', color: '#A29BFE', icon: '🏦', type: 'expense' },
   { id: 'education', name: '教育', color: '#FD79A8', icon: '📚', type: 'expense' },
   { id: 'cat', name: '养猫', color: '#E84393', icon: '🐱', type: 'expense' },
   { id: 'medical', name: '医疗', color: '#00B894', icon: '🏥', type: 'expense' },
-  { id: 'other', name: '其它', color: '#636E72', icon: '📦', type: 'expense' },
-  { id: 'income', name: '收入', color: '#00B894', icon: '💰', type: 'income' }
-]
-
-const PLATFORMS = [
-  { id: 'wechat', name: '微信', color: '#07C160' },
-  { id: 'alipay', name: '支付宝', color: '#1677FF' },
-  { id: 'meituan', name: '美团', color: '#FFD700' },
-  { id: 'douyin', name: '抖音', color: '#000000' }
+  { id: 'rent', name: '住房水电', color: '#A29BFE', icon: '🏠', type: 'expense' },
+  { id: 'other', name: '其他', color: '#636E72', icon: '📦', type: 'expense' },
+  { id: 'salary', name: '工资收入', color: '#00B894', icon: '💰', type: 'income' },
+  { id: 'other-income', name: '其他收入', color: '#52c41a', icon: '💵', type: 'income' }
 ]
 
 const EXCHANGE_RATES = {
@@ -37,47 +31,26 @@ const EXCHANGE_RATES = {
 
 const STORAGE_KEYS = {
   CATEGORIES: 'bookkeeping_categories',
-  PLATFORMS: 'bookkeeping_platforms',
-  USER_SETTINGS: 'bookkeeping_user_settings',
   EXCHANGE_RATES: 'bookkeeping_exchange_rates'
 }
 
 function App() {
   const [activeTab, setActiveTab] = useState('record')
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
-  const [platforms, setPlatforms] = useState(PLATFORMS)
-  const [userSettings, setUserSettings] = useState({
-    user1Platforms: ['wechat', 'alipay'],
-    user2Platforms: ['meituan', 'douyin']
-  })
   const [exchangeRates, setExchangeRates] = useState(EXCHANGE_RATES)
 
   useEffect(() => {
     const savedCategories = localStorage.getItem(STORAGE_KEYS.CATEGORIES)
     if (savedCategories) setCategories(JSON.parse(savedCategories))
 
-    const savedPlatforms = localStorage.getItem(STORAGE_KEYS.PLATFORMS)
-    if (savedPlatforms) setPlatforms(JSON.parse(savedPlatforms))
-
-    const savedUserSettings = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS)
-    if (savedUserSettings) setUserSettings(JSON.parse(savedUserSettings))
-
     const savedRates = localStorage.getItem(STORAGE_KEYS.EXCHANGE_RATES)
     if (savedRates) setExchangeRates(JSON.parse(savedRates))
   }, [])
 
-  const handleSaveSettings = (newCategories, newPlatforms, newUserSettings, newRates) => {
+  const handleSaveSettings = (newCategories, newRates) => {
     if (newCategories) {
       setCategories(newCategories)
       localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(newCategories))
-    }
-    if (newPlatforms) {
-      setPlatforms(newPlatforms)
-      localStorage.setItem(STORAGE_KEYS.PLATFORMS, JSON.stringify(newPlatforms))
-    }
-    if (newUserSettings) {
-      setUserSettings(newUserSettings)
-      localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify(newUserSettings))
     }
     if (newRates) {
       setExchangeRates(newRates)
@@ -130,8 +103,6 @@ function App() {
             {activeTab === 'record' && (
               <RecordPage
                 categories={categories}
-                platforms={platforms}
-                userSettings={userSettings}
                 exchangeRates={exchangeRates}
               />
             )}
@@ -139,13 +110,11 @@ function App() {
               <StatsPage categories={categories} />
             )}
             {activeTab === 'import-export' && (
-              <ImportExportPage categories={categories} platforms={platforms} exchangeRates={exchangeRates} />
+              <ImportExportPage categories={categories} exchangeRates={exchangeRates} />
             )}
             {activeTab === 'settings' && (
               <SettingsPage
                 categories={categories}
-                platforms={platforms}
-                userSettings={userSettings}
                 exchangeRates={exchangeRates}
                 onSave={handleSaveSettings}
               />

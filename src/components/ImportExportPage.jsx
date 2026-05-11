@@ -6,92 +6,190 @@ import './ImportExportPage.css'
 
 const { Dragger } = Upload
 
-function ImportExportPage({ categories, platforms, exchangeRates }) {
+function ImportExportPage({ categories, exchangeRates }) {
   const [loading, setLoading] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   const handleExportExcel = async (recordList, year) => {
     setLoading(true)
     try {
-      const filtered = year ? recordList.filter(r => new Date(r.date).getFullYear() === year) : recordList
+      const filtered = recordList.filter(r => new Date(r.date).getFullYear() === year)
 
-      const monthGroups = {}
-      filtered.forEach(r => {
-        const d = new Date(r.date)
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        if (!monthGroups[monthKey]) monthGroups[monthKey] = []
-        monthGroups[monthKey].push(r)
-      })
+      const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+      const categoryIds = ['food', 'dining', 'clothes', 'transport', 'car', 'entertainment', 'daily', 'education', 'cat', 'medical', 'rent', 'other', 'salary', 'other-income']
+      const categoryNames = ['食材', '餐饮', '衣服', '出行', '养车', '休闲', '日用', '教育', '养猫', '医疗', '住房水电', '其他', '工资收入', '其他收入']
 
       const workbook = XLSX.utils.book_new()
 
-      Object.entries(monthGroups).sort(([a], [b]) => a.localeCompare(b)).forEach(([month, recs]) => {
-        const sheetData = []
-        const catNames = {}
-        categories.forEach(c => { catNames[c.id] = c.name })
-        const platNames = {}
-        platforms.forEach(p => { platNames[p.id] = p.name })
+      // 先创建年度汇总数据
+      const summaryAoa = []
+      const summaryHeaderRow = ['月份', ...categoryNames, '支出合计', '收入合计']
+      summaryAoa.push(summaryHeaderRow)
 
-        const grouped = {}
-        recs.forEach(r => {
-          const key = `${r.date}|${r.type}|${r.category}|${r.platform}|${r.remark || ''}`
-          if (!grouped[key]) {
-            grouped[key] = { ...r, count: 0, totalAmount: 0 }
+      for (let month = 0; month < 12; month++) {
+        const sheetNameForFormula = `'${year}${monthNames[month]}'`
+        const daysInMonth = new Date(year, month + 1, 0).getDate()
+        const lastRow = daysInMonth + 2  // header + days rows + summary label row (row 33 for 31-day month)
+
+        const summaryMonthRow = [monthNames[month]]
+        for (let i = 0; i < categoryIds.length; i++) {
+          const colLetter = XLSX.utils.encode_col(i + 1)
+          summaryMonthRow.push({ t: 'n', v: 0, f: `SUM(${sheetNameForFormula}!${colLetter}2:${colLetter}${lastRow})` })
+        }
+        // 支出合计 = SUM(B34:M34) 即食材到其他（不包括工资和其他收入），引用汇总数据行
+        summaryMonthRow.push({ t: 'n', v: 0, f: `SUM(${sheetNameForFormula}!B${lastRow + 1}:M${lastRow + 1})` })
+        // 收入合计 = SUM(N34:O34) 即工资和其他收入，引用汇总数据行
+        summaryMonthRow.push({ t: 'n', v: 0, f: `SUM(${sheetNameForFormula}!N${lastRow + 1}:O${lastRow + 1})` })
+        summaryAoa.push(summaryMonthRow)
+      }
+
+      // 年度汇总标签行
+      const summaryYearLabelRow = ['年度汇总']
+      for (let i = 0; i < categoryIds.length; i++) {
+        summaryYearLabelRow.push(`${categoryNames[i]}汇总`)
+      }
+      summaryYearLabelRow.push('支出汇总')
+      summaryYearLabelRow.push('收入合计')
+      summaryAoa.push(summaryYearLabelRow)
+
+      // 年度汇总数据行
+      const summaryYearRow = ['']
+      for (let i = 0; i < categoryIds.length; i++) {
+        const colLetter = XLSX.utils.encode_col(i + 1)
+        summaryYearRow.push({ t: 'n', v: 0, f: `SUM(${colLetter}2:${colLetter}13)` })
+      }
+      summaryYearRow.push({ t: 'n', v: 0, f: `SUM(P2:P13)` })
+      summaryYearRow.push({ t: 'n', v: 0, f: `SUM(Q2:Q13)` })
+      summaryAoa.push(summaryYearRow)
+
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryAoa)
+      summarySheet['!cols'] = [
+        { wch: 12 },
+        ...Array(14).fill({ wch: 10 }),
+        { wch: 12 },
+        { wch: 12 }
+      ]
+      XLSX.utils.book_append_sheet(workbook, summarySheet, '年度汇总')
+
+      // 创建月度sheets
+      for (let month = 0; month < 12; month++) {
+        const monthRecords = filtered.filter(r => new Date(r.date).getMonth() === month)
+        const sheetName = `${year}${monthNames[month]}`
+        const daysInMonth = new Date(year, month + 1, 0).getDate()
+        const aoa = []
+
+        const headerRow = ['日期', ...categoryNames, '支出合计', '收入合计', '支出备注', '收入备注']
+        aoa.push(headerRow)
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const dayRecords = monthRecords.filter(r => r.date === dateStr)
+
+          const row = [`${month + 1}月${day}日`]
+          let dayExpense = 0
+          let dayIncome = 0
+          const expenseRemarks = []
+          const incomeRemarks = []
+
+          for (const catId of categoryIds) {
+            const catRecords = dayRecords.filter(r => r.category === catId)
+            if (catRecords.length === 0) {
+              row.push('')
+            } else if (catRecords.length === 1) {
+              row.push({ t: 'n', v: catRecords[0].amount, f: `=${catRecords[0].amount}` })
+            } else {
+              const amounts = catRecords.map(r => r.amount)
+              const displayValue = amounts.join('+')
+              row.push({ t: 'n', v: amounts.reduce((sum, v) => sum + v, 0), f: `=${displayValue}` })
+            }
+
+            if (catId === 'salary' || catId === 'other-income') {
+              dayIncome += catRecords.reduce((sum, r) => sum + r.amount, 0)
+            } else {
+              dayExpense += catRecords.reduce((sum, r) => sum + r.amount, 0)
+            }
+
+            catRecords.forEach(r => {
+              if (r.remark) {
+                if (catId === 'salary' || catId === 'other-income') {
+                  incomeRemarks.push(r.remark)
+                } else {
+                  expenseRemarks.push(r.remark)
+                }
+              }
+            })
           }
-          grouped[key].count++
-          grouped[key].totalAmount += r.amount
-        })
 
-        const sortedKeys = Object.keys(grouped).sort()
-        sortedKeys.forEach(key => {
-          const r = grouped[key]
-          const amountVal = r.count === 1 ? r.originalAmount : `${r.originalAmount}(x${r.count})`
-          sheetData.push({
-            '日期': r.date,
-            '类型': r.type === 'income' ? '收入' : '支出',
-            '类别': catNames[r.category] || r.category,
-            '平台': platNames[r.platform] || r.platform,
-            '金额': amountVal,
-            '备注': r.remark || ''
-          })
-        })
+          const rowNum = day + 1
+          row.push({ t: 'n', v: dayExpense > 0 ? dayExpense : 0, f: `SUM(B${rowNum}:M${rowNum})` })
+          row.push({ t: 'n', v: dayIncome > 0 ? dayIncome : 0, f: `SUM(N${rowNum}:O${rowNum})` })
+          row.push(expenseRemarks.length > 0 ? expenseRemarks.join('+') : '')
+          row.push(incomeRemarks.length > 0 ? incomeRemarks.join('+') : '')
 
-        const totals = { income: 0, expense: 0 }
-        recs.forEach(r => {
-          totals[r.type] += r.amount
-        })
+          aoa.push(row)
+        }
 
-        sheetData.push({}, {
-          '日期': '汇总',
-          '类型': '收入',
-          '类别': '',
-          '平台': '',
-          '金额': totals.income.toFixed(2),
-          '备注': ''
-        }, {
-          '日期': '汇总',
-          '类型': '支出',
-          '类别': '',
-          '平台': '',
-          '金额': totals.expense.toFixed(2),
-          '备注': ''
-        }, {
-          '日期': '汇总',
-          '类型': '结余',
-          '类别': '',
-          '平台': '',
-          '金额': (totals.income - totals.expense).toFixed(2),
-          '备注': ''
-        })
+        const lastRow = daysInMonth + 1
+        const summaryLabelRow = ['本月汇总']
+        const summaryValueRow = ['']
+        for (let i = 0; i < categoryIds.length; i++) {
+          const catName = categoryNames[i]
+          const colLetter = XLSX.utils.encode_col(i + 1)
+          summaryLabelRow.push(`${catName}汇总`)
+          summaryValueRow.push({ t: 'n', v: 0, f: `SUM(${colLetter}2:${colLetter}${lastRow})` })
+        }
+        summaryLabelRow.push('支出汇总')
+        summaryLabelRow.push('收入汇总')
+        summaryLabelRow.push('')
+        summaryLabelRow.push('')
+        summaryValueRow.push({ t: 'n', v: 0, f: `SUM(B2:M${lastRow})` })
+        summaryValueRow.push({ t: 'n', v: 0, f: `SUM(N2:O${lastRow})` })
+        summaryValueRow.push('')
+        summaryValueRow.push('')
+        aoa.push(summaryLabelRow)
+        aoa.push(summaryValueRow)
 
-        const worksheet = XLSX.utils.json_to_sheet(sheetData)
+        const worksheet = XLSX.utils.aoa_to_sheet(aoa)
         worksheet['!cols'] = [
-          { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 20 }
+          { wch: 12 },
+          ...Array(14).fill({ wch: 10 }),
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 20 },
+          { wch: 20 }
         ]
-        XLSX.utils.book_append_sheet(workbook, worksheet, month)
-      })
+        XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
+      }
 
-      XLSX.writeFile(workbook, `记账本导出_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
+      // 创建原始数据sheet
+      const rawDataAoa = []
+      const rawDataHeaderRow = ['日期', '类型', '类别', '金额', '原始金额', '货币', '备注']
+      rawDataAoa.push(rawDataHeaderRow)
+      filtered.forEach(record => {
+        const cat = categories.find(c => c.id === record.category)
+        rawDataAoa.push([
+          record.date,
+          record.type === 'income' ? '收入' : '支出',
+          cat ? cat.name : record.category,
+          record.amount,
+          record.originalAmount,
+          record.originalCurrency,
+          record.remark || ''
+        ])
+      })
+      const rawDataSheet = XLSX.utils.aoa_to_sheet(rawDataAoa)
+      rawDataSheet['!cols'] = [
+        { wch: 12 },
+        { wch: 8 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 8 },
+        { wch: 20 }
+      ]
+      XLSX.utils.book_append_sheet(workbook, rawDataSheet, '原始数据')
+
+      XLSX.writeFile(workbook, `记账本导出_${year}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
       message.success('导出成功')
     } catch (err) {
       console.error(err)
@@ -125,10 +223,13 @@ function ImportExportPage({ categories, platforms, exchangeRates }) {
         ),
         okText: '导出全部',
         cancelText: '取消',
-        onOk: () => handleExportExcel(allRecords, null),
+        onOk: () => {
+          const sortedYears = years.sort((a, b) => b - a)
+          handleExportExcel(allRecords, sortedYears[0])
+        },
       })
     } else {
-      handleExportExcel(allRecords, null)
+      handleExportExcel(allRecords, years[0])
     }
   }
 
@@ -136,45 +237,148 @@ function ImportExportPage({ categories, platforms, exchangeRates }) {
     setLoading(true)
     try {
       const data = await file.arrayBuffer()
-      const workbook = XLSX.read(data)
-      const sheetName = workbook.SheetNames[0]
-      const sheet = workbook.Sheets[sheetName]
-      const json = XLSX.utils.sheet_to_json(sheet)
+      const workbook = XLSX.read(data, { cellFormula: true, cellText: true })
 
-      const records = json
-        .filter(row => row['日期'] && row['类型'] && row['金额'])
-        .map(row => {
-          let amount = row['金额']
-          let originalAmount = amount
-          let originalCurrency = 'CNY'
+      const categoryIds = ['food', 'dining', 'clothes', 'transport', 'car', 'entertainment', 'daily', 'education', 'cat', 'medical', 'rent', 'other', 'salary', 'other-income']
+      const categoryNamesInExcel = ['食材', '餐饮', '衣服', '出行', '养车', '休闲', '日用', '教育', '养猫', '医疗', '住房水电', '其他', '工资收入', '其他收入']
 
-          const match = String(amount).match(/^([^(]+)(?:\(x(\d+)\))?$/)
-          if (match) {
-            originalAmount = parseFloat(match[1])
+      const allRecords = []
+      const recordKeys = new Set() // 用于去重 date|amount|category
+
+      const addRecordIfNotDuplicate = (record) => {
+        const key = `${record.date}|${record.amount}|${record.category}|${record.originalCurrency || 'CNY'}`
+        if (!recordKeys.has(key)) {
+          recordKeys.add(key)
+          allRecords.push(record)
+        }
+      }
+
+      // 优先从原始数据sheet导入（包含完整的备注信息）
+      if (workbook.SheetNames.includes('原始数据')) {
+        const rawSheet = workbook.Sheets['原始数据']
+        if (rawSheet['!ref']) {
+          const rawData = XLSX.utils.sheet_to_json(rawSheet, { header: 1 })
+          const headers = rawData[0]
+          // 找到各列的索引
+          const dateIdx = headers.indexOf('日期')
+          const typeIdx = headers.indexOf('类型')
+          const categoryIdx = headers.indexOf('类别')
+          const amountIdx = headers.indexOf('金额')
+          const originalAmountIdx = headers.indexOf('原始金额')
+          const currencyIdx = headers.indexOf('货币')
+          const remarkIdx = headers.indexOf('备注')
+
+          for (let i = 1; i < rawData.length; i++) {
+            const row = rawData[i]
+            if (!row[dateIdx] || !row[amountIdx]) continue
+
+            // 根据类别名称找到对应的category id
+            const catName = row[categoryIdx]
+            const catId = categoryIds.find(id => {
+              const idx = categoryIds.indexOf(id)
+              return categoryNamesInExcel[idx] === catName
+            })
+
+            addRecordIfNotDuplicate({
+              date: String(row[dateIdx]).trim(),
+              type: row[typeIdx] === '收入' ? 'income' : 'expense',
+              category: catId || 'other',
+              amount: parseFloat(row[amountIdx]) || 0,
+              originalAmount: parseFloat(row[originalAmountIdx]) || parseFloat(row[amountIdx]) || 0,
+              originalCurrency: row[currencyIdx] || 'CNY',
+              remark: row[remarkIdx] || '',
+              createdAt: new Date().toISOString()
+            })
           }
+        }
+      }
 
-          const typeMap = { '收入': 'income', '支出': 'expense' }
-          const categoryMap = {}
-          categories.forEach(c => { categoryMap[c.name] = c.id })
-          const platformMap = {}
-          platforms.forEach(p => { platformMap[p.name] = p.id })
+      // 同时从月度sheets解析，以防直接修改了月度sheet而原始数据sheet未同步
+      workbook.SheetNames.forEach(sheetName => {
+        const sheet = workbook.Sheets[sheetName]
+        if (!sheet['!ref']) return
+        if (sheetName === '原始数据' || sheetName === '年度汇总') return
 
-          return {
-            date: row['日期'],
-            type: typeMap[row['类型']] || 'expense',
-            category: categoryMap[row['类别']] || 'other',
-            platform: platformMap[row['平台']] || 'wechat',
-            amount: originalAmount,
-            originalAmount,
-            originalCurrency,
-            remark: row['备注'] || '',
-            createdAt: new Date().toISOString()
+        const year = parseInt(sheetName.substring(0, 4))
+        const monthPart = sheetName.substring(4)
+        const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+        const monthIndex = monthNames.indexOf(monthPart)
+        if (monthIndex === -1) return
+
+        const range = XLSX.utils.decode_range(sheet['!ref'])
+        const lastRow = range.e.r
+
+        for (let rowNum = 1; rowNum <= lastRow; rowNum++) {
+          const dateCellRef = XLSX.utils.encode_cell({ r: rowNum, c: 0 })
+          const dateCell = sheet[dateCellRef]
+          if (!dateCell || !dateCell.v) continue
+
+          const dateStr = String(dateCell.v)
+          const dayMatch = dateStr.match(/^(\d+)月(\d+)日$/)
+          if (!dayMatch) continue
+
+          const day = parseInt(dayMatch[2])
+          const fullDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+
+          for (let colNum = 0; colNum < categoryIds.length; colNum++) {
+            const cellRef = XLSX.utils.encode_cell({ r: rowNum, c: colNum + 1 })
+            const cell = sheet[cellRef]
+            if (!cell) continue
+
+            const catId = categoryIds[colNum]
+            const isIncome = catId === 'salary' || catId === 'other-income'
+
+            if (cell.f) {
+              const formula = cell.f
+              const parts = formula.split('+')
+              parts.forEach(part => {
+                const num = parseFloat(part.trim())
+                if (!isNaN(num) && num !== 0) {
+                  addRecordIfNotDuplicate({
+                    date: fullDate,
+                    type: isIncome ? 'income' : 'expense',
+                    category: catId,
+                    amount: num,
+                    originalAmount: num,
+                    originalCurrency: 'CNY',
+                    remark: '',
+                    createdAt: new Date().toISOString()
+                  })
+                }
+              })
+            } else if (typeof cell.v === 'number' && cell.v !== 0) {
+              addRecordIfNotDuplicate({
+                date: fullDate,
+                type: isIncome ? 'income' : 'expense',
+                category: catId,
+                amount: cell.v,
+                originalAmount: cell.v,
+                originalCurrency: 'CNY',
+                remark: '',
+                createdAt: new Date().toISOString()
+              })
+            } else if (typeof cell.v === 'string' && cell.v.trim() !== '') {
+              const parsed = parseFloat(cell.v)
+              if (!isNaN(parsed) && parsed !== 0) {
+                addRecordIfNotDuplicate({
+                  date: fullDate,
+                  type: isIncome ? 'income' : 'expense',
+                  category: catId,
+                  amount: parsed,
+                  originalAmount: parsed,
+                  originalCurrency: 'CNY',
+                  remark: '',
+                  createdAt: new Date().toISOString()
+                })
+              }
+            }
           }
-        })
+        }
+      })
 
-      if (records.length > 0) {
-        await importRecords(records)
-        message.success(`成功导入 ${records.length} 条记录`)
+      if (allRecords.length > 0) {
+        await importRecords(allRecords)
+        message.success(`成功导入 ${allRecords.length} 条记录`)
       } else {
         message.warning('未能解析到有效记录')
       }
@@ -199,7 +403,6 @@ function ImportExportPage({ categories, platforms, exchangeRates }) {
   const exportSettings = async () => {
     const settings = {
       categories,
-      platforms,
       exchangeRates,
       exportedAt: new Date().toISOString()
     }
@@ -217,9 +420,8 @@ function ImportExportPage({ categories, platforms, exchangeRates }) {
     try {
       const text = await file.text()
       const settings = JSON.parse(text)
-      if (settings.categories && settings.platforms) {
+      if (settings.categories) {
         localStorage.setItem('bookkeeping_categories', JSON.stringify(settings.categories))
-        localStorage.setItem('bookkeeping_platforms', JSON.stringify(settings.platforms))
         localStorage.setItem('bookkeeping_exchange_rates', JSON.stringify(settings.exchangeRates || { CNY: 1, USD: 7.2, HKD: 0.92 }))
         message.success('设置导入成功，请刷新页面')
       } else {

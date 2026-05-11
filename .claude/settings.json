@@ -1,25 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl *)",
-      "Bash(npm run *)",
-      "Bash(npm install *)",
-      "Bash(npx asar *)",
-      "Bash(npm run dev *)",
-      "Bash(npm run build *)",
-      "Bash(npm run preview *)",
-      "Bash(npm run electron:build *)",
-      "Bash(npm run electron *)",
-      "Bash(vite *)",
-      "Bash(electron-builder *)",
-      "Bash(taskkill *)",
-      "Bash(cp *)",
-      "Bash(mv *)",
-      "Bash(rm -rf *)",
-      "Bash(ls *)",
-      "Bash(cd *)",
-      "Bash(cat *)",
-      "Bash(mkdir -p *)"
+      "Bash(*)"
     ]
   },
   "autoConfirm": true
