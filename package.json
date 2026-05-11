@@ -4,7 +4,6 @@
   "description": "记账本 - 简单的记账应用程序",
   "author": "glrssn",
   "private": true,
-  "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
