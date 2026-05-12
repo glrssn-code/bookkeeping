@@ -19,6 +19,7 @@ function RecordPage({ categories, exchangeRates, theme }) {
   const [editDate, setEditDate] = useState(null)
   const [editAmount, setEditAmount] = useState(null)
   const [editRemark, setEditRemark] = useState('')
+  const [editCurrency, setEditCurrency] = useState('CNY')
   const amountInputRef = useRef(null)
 
   const expenseCategories = categories.filter(c => c.type === 'expense')
@@ -208,6 +209,7 @@ function RecordPage({ categories, exchangeRates, theme }) {
     setEditDate(record.date)
     setEditAmount(record.originalAmount)
     setEditRemark(record.remark || '')
+    setEditCurrency(record.originalCurrency || 'CNY')
   }
 
   const handleEditSave = async () => {
@@ -215,14 +217,14 @@ function RecordPage({ categories, exchangeRates, theme }) {
       message.warning('请输入金额')
       return
     }
-    const rate = exchangeRates[editDate ? currency : 'CNY'] || 1
+    const rate = exchangeRates[editCurrency] || 1
     const convertedAmount = editAmount * rate
 
     await updateRecord(editingRecord.id, {
       date: editDate,
       amount: convertedAmount,
       originalAmount: editAmount,
-      originalCurrency: currency,
+      originalCurrency: editCurrency,
       remark: editRemark
     })
     message.success('修改成功')
