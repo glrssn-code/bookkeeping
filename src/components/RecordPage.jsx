@@ -240,9 +240,15 @@ function RecordPage({ categories, exchangeRates, theme }) {
       <div className="calendar-card">
         <div className="calendar-header">
           <button className="nav-btn" onClick={handlePrevMonth}>&lt;</button>
-          <span className="calendar-title">
-            {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <span className="calendar-title">
+              {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
+            </span>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
+              <span style={{ color: '#52c41a' }}>收入 ¥{monthRecords.filter(r => r.type === 'income').reduce((sum, r) => sum + r.amount, 0).toFixed(0)}</span>
+              <span style={{ color: '#ff4d4f' }}>支出 ¥{monthRecords.filter(r => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0).toFixed(0)}</span>
+            </div>
+          </div>
           <button className="nav-btn" onClick={handleNextMonth}>&gt;</button>
         </div>
         <div className="calendar-grid">
@@ -355,14 +361,16 @@ function RecordPage({ categories, exchangeRates, theme }) {
                   className="record-item"
                   style={{ borderLeftColor: cat?.color || '#ccc' }}
                 >
-                  <div className="record-category">
-                    <span>{cat?.icon}</span>
-                    <span>{cat?.name}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="record-category">
+                      <span>{cat?.icon}</span>
+                      <span>{cat?.name}</span>
+                    </div>
+                    <div className="record-amount" style={{ color: record.type === 'income' ? '#52c41a' : '#ff4d4f' }}>
+                      {record.type === 'income' ? '+' : '-'}{record.amount?.toFixed(2)}
+                    </div>
                   </div>
                   {record.remark && <div className="record-remark">{record.remark}</div>}
-                  <div className="record-amount" style={{ color: record.type === 'income' ? '#52c41a' : '#ff4d4f' }}>
-                    {record.type === 'income' ? '+' : '-'}{record.amount?.toFixed(2)}
-                  </div>
                   <div className="record-meta">
                     <span>{record.originalCurrency} {record.originalAmount?.toFixed(2)}</span>
                     <span style={{ cursor: 'pointer', color: '#1677FF' }} onClick={() => handleEdit(record)}>编辑</span>

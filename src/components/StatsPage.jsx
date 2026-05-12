@@ -408,7 +408,7 @@ function StatsPage({ categories }) {
                     </td>
                     <td style={{ padding: '10px', borderBottom: '1px solid #f0f0f0', textAlign: 'right' }}>
                       {prevYearMonthlyData ? (
-                        <span style={{ color: selectedMonthData.expense <= prevYearMonthlyData[selectedMonth].expense ? '#52c41a' : '#ff4d4f' }}>
+<span style={{ color: selectedMonthData.expense <= prevYearMonthlyData[selectedMonth].expense ? '#52c41a' : '#ff4d4f' }}>
                           {prevYearMonthlyData[selectedMonth].expense > 0 ? ((selectedMonthData.expense - prevYearMonthlyData[selectedMonth].expense) / prevYearMonthlyData[selectedMonth].expense * 100).toFixed(1) + '%' : '-'}
                         </span>
                       ) : '-'}
